@@ -1,6 +1,7 @@
 package main
 
 import (
+	"backend/src/config"
 	"backend/src/router"
 	"backend/tests/redis"
 	"fmt"
@@ -9,6 +10,9 @@ import (
 )
 
 func main() {
+	fmt.Println("Starting the backend server...")
+	fmt.Println("Loading configuration...")
+	config.Load()
 	fmt.Println("Running the backend server...")
 	router := router.Generate()
 
@@ -18,7 +22,7 @@ func main() {
 	}
 
 	fmt.Println("Users populated successfully")
-	fmt.Println("Backend server is running on port 5000")
+	fmt.Printf("Backend server is running on port %d\n", config.ApiPort)
 
-	log.Fatal(http.ListenAndServe(":5000", router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.ApiPort), router))
 }
