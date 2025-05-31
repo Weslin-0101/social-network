@@ -13,6 +13,7 @@ var (
 	RedisHost = ""
 	RedisPort = 0
 	RedisDB   = 0
+	RedisURL  = ""
 	ApiPort   = 0
 )
 
@@ -35,6 +36,11 @@ func Load() {
 	}
 
 	RedisHost = fmt.Sprintf("%s:%d", os.Getenv("REDIS_HOST"), RedisPort)
+	if RedisHost == "" {
+		RedisHost = "localhost"
+	}
+	
+	RedisURL = fmt.Sprintf("redis://%s:%d/%d", os.Getenv("REDIS_HOST"), RedisPort, RedisDB)
 
 	ApiPort, err = strconv.Atoi(os.Getenv("API_PORT"))
 	if err != nil {
