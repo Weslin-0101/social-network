@@ -1,4 +1,22 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: social-network-app
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=db
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://db:6379
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - social-network
+
   db:
     image: redis:7-alpine
     container_name: social-network-db
@@ -13,7 +31,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - social-network
 
 volumes:
   redis-data:
     driver: local
+
+networks:
+  social-network:
+    driver: bridge
