@@ -17,7 +17,10 @@ RUN go mod download
 COPY . .
 
 # Build da aplicação
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -a -installsuffix cgo \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o main ./main.go
 
 # Production stage
 FROM alpine:latest
@@ -25,13 +28,21 @@ FROM alpine:latest
 # Instalar ca-certificates para HTTPS
 RUN apk --no-cache add ca-certificates tzdata
 
-WORKDIR /root/
+RUN adduser -D -s /bin/sh appuser
 
-# Copiar o binário da aplicação do stage anterior
+WORKDIR  /home/appuser/
+
 COPY --from=builder /app/main .
+
+RUN chmod +x main
+
+USER appuser
 
 # Expor a porta (ajuste conforme necessário)
 EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 # Comando para executar a aplicação
 CMD ["./main"]

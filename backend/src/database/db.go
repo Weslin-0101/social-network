@@ -1,20 +1,49 @@
 package database
 
 import (
-	"backend/src/config"
-	"database/sql"
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/redis/go-redis/v9"
 )
 
-func Connect() (*sql.DB, error) {
-	db, err := sql.Open("redis", config.RedisURL)
+func ConnectRedis() (*redis.Client, error) {
+	host := os.Getenv("REDIS_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	port := os.Getenv("REDIS_PORT")
+	if port == "" {
+		port = "6379"
+	}
+
+	password := os.Getenv("REDIS_PASSWORD")
+	dbStr := os.Getenv("REDIS_DB")
+	db := 0
+	if dbStr != "" {
+		if parsed, err := strconv.Atoi(dbStr); err == nil {
+			db = parsed
+		}
+	}
+
+	addr := fmt.Sprintf("%s:%s", host, port)
+
+	client := redis.NewClient(&redis.Options{
+		Addr: addr,
+		Password: password,
+		DB: db,
+	})
+
+	ctx := context.Background()
+	pong, err := client.Ping(ctx).Result()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
-	if err := db.Ping(); err != nil {
-		db.Close()
-		return nil, err
-	}
+	fmt.Printf("Connected to Redis: %s\n", pong)
 
-	return db, nil
+	return client, nil
 }
