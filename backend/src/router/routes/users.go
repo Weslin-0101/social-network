@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"backend/src/controllers"
+	controllers "backend/src/controllers/user"
 )
 
 var userRoutes = []Route {
