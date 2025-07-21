@@ -10,11 +10,15 @@ import (
 )
 
 var (
-	RedisHost = ""
-	RedisPort = 0
-	RedisDB   = 0
-	RedisURL  = ""
-	ApiPort   = 0
+	DBHost 		= ""
+	DBPort 		= 0
+	DBUser 		= ""
+	DBPassword 	= ""
+	DBName 		= ""
+	DBSSLMode 	= ""
+	DBURL 		= ""
+
+	APIPort 	= 0
 )
 
 func Load() {
@@ -25,25 +29,36 @@ func Load() {
 		log.Println("No .env file found, using default values from system")
 	}
 
-	RedisPort, err = strconv.Atoi(os.Getenv("REDIS_PORT"))
+	DBPort, err = strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
-		RedisPort = 6379
+		DBPort = 5432
 	}
 
-	RedisDB, err = strconv.Atoi(os.Getenv("REDIS_DB"))
-	if err != nil {
-		RedisDB = 0
+	DBUser = os.Getenv("DB_USER")
+	if DBUser == "" {
+		DBUser = "postgres"
 	}
 
-	RedisHost = fmt.Sprintf("%s:%d", os.Getenv("REDIS_HOST"), RedisPort)
-	if RedisHost == "" {
-		RedisHost = "localhost"
+	DBPassword = os.Getenv("DB_PASSWORD")
+	if DBPassword == "" {
+		DBPassword = "password"
 	}
-	
-	RedisURL = fmt.Sprintf("redis://%s:%d/%d", os.Getenv("REDIS_HOST"), RedisPort, RedisDB)
 
-	ApiPort, err = strconv.Atoi(os.Getenv("API_PORT"))
+	DBName = os.Getenv("DB_NAME")
+	if DBName == "" {
+		DBName = "social_network"
+	}
+
+	DBSSLMode = os.Getenv("DB_SSLMODE")
+	if DBSSLMode == "" {
+		DBSSLMode = "disable"
+	}
+
+	DBURL = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		DBHost, DBPort, DBUser, DBPassword, DBName, DBSSLMode)
+
+	APIPort, err = strconv.Atoi(os.Getenv("API_PORT"))
 	if err != nil {
-		ApiPort = 5000
+		APIPort = 5000
 	}
 }

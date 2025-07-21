@@ -1,49 +1,34 @@
 package database
 
 import (
-	"context"
+	"backend/src/config"
+	"database/sql"
 	"fmt"
-	"os"
-	"strconv"
-
-	"github.com/redis/go-redis/v9"
 )
 
-func ConnectRedis() (*redis.Client, error) {
-	host := os.Getenv("REDIS_HOST")
-	if host == "" {
-		host = "localhost"
-	}
+var DB *sql.DB
 
-	port := os.Getenv("REDIS_PORT")
-	if port == "" {
-		port = "6379"
-	}
+func ConnectDB() error {
+	var err error
 
-	password := os.Getenv("REDIS_PASSWORD")
-	dbStr := os.Getenv("REDIS_DB")
-	db := 0
-	if dbStr != "" {
-		if parsed, err := strconv.Atoi(dbStr); err == nil {
-			db = parsed
-		}
-	}
-
-	addr := fmt.Sprintf("%s:%s", host, port)
-
-	client := redis.NewClient(&redis.Options{
-		Addr: addr,
-		Password: password,
-		DB: db,
-	})
-
-	ctx := context.Background()
-	pong, err := client.Ping(ctx).Result()
+	DB, err = sql.Open("postgres", config.DBURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	fmt.Printf("Connected to Redis: %s\n", pong)
+	if err = DB.Ping(); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
 
-	return client, nil
+	fmt.Println("Database connection established successfully")
+
+	return nil
+}
+
+func CloseDB() error {
+	if DB != nil {
+		return DB.Close()
+	}
+
+	return nil
 }

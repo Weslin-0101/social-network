@@ -1,16 +1,16 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: social-network-app
     ports:
       - "5000:5000"
     environment:
-      - REDIS_HOST=db
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - REDIS_DB=0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=social_network
+      - DB_SSLMODE=disable
       - API_PORT=5000
     depends_on:
       db:
@@ -20,16 +20,20 @@ services:
       - social-network
 
   db:
-    image: redis:7-alpine
+    image: postgres:15-alpine
     container_name: social-network-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: social_network
     ports:
-      - "6379:6379"
-    command: redis-server --save 60 1 --loglevel warning
+      - "5432:5432"
     volumes:
-      - redis-data:/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,8 +41,7 @@ services:
       - social-network
 
 volumes:
-  redis-data:
-    driver: local
+  postgres_data:
 
 networks:
   social-network:

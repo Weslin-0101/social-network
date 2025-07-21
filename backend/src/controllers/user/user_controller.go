@@ -21,12 +21,12 @@ var (
 
 func initRepository() {
 	repoOnce.Do(func() {
-		redisClient, err := database.ConnectRedis()
+		err := database.ConnectDB()
 		if err != nil {
 			repoErr = err
 			return
 		}
-		userRepo = repositories.NewRedisUserRepository(redisClient)
+		userRepo = repositories.NewPostgreUserRepository()
 	})
 }
 

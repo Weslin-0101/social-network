@@ -1,47 +1,42 @@
 package repositories
 
 import (
+	"backend/src/database"
 	"backend/src/model"
-	"context"
-	"encoding/json"
+	"database/sql"
 	"fmt"
-	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
-type RedisUserRepository struct {
-	client *redis.Client
-	ctx		context.Context
+type PostgreUserRepository struct {
+	db *sql.DB
 }
 
-func NewRedisUserRepository(client *redis.Client) *RedisUserRepository {
-	return &RedisUserRepository{
-		client: client,
-		ctx: context.Background(),
+func NewPostgreUserRepository() *PostgreUserRepository {
+	return &PostgreUserRepository{
+		db: database.DB,
 	}
 }
 
-func (r *RedisUserRepository) CreateUser(user model.User) (uint64, error) {
-	if user.ID == 0 {
-		newID, err := r.client.Incr(r.ctx, "user:counter").Result()
-		if err != nil {
-			return 0, fmt.Errorf("failed to generate user ID: %w", err)
-		}
-		user.ID = uint64(newID)
-	}
+func (r *PostgreUserRepository) CreateUser(user model.User) (uint64, error) {
+	query := `
+		INSERT INTO users (username, nickname, email, password, created_at) 
+		VALUES ($1, $2, $3, $4) 
+		RETURNING id
+	`
 
-	userData, err := json.Marshal(user)
+	var userID uint64
+	err := r.db.QueryRow(
+		query, 
+		user.Username, 
+		user.Nickname, 
+		user.Email,
+		user.Password,
+		user.CreatedAt,
+	).Scan(&userID)
+	
 	if err != nil {
-		return 0, fmt.Errorf("failed to marshal user data: %w", err)
+		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	key := fmt.Sprintf("user:%d", user.ID)
-
-	err = r.client.Set(r.ctx, key, userData, 24*time.Hour).Err()
-	if err != nil {
-		return 0, fmt.Errorf("failed to store user in redis: %w", err)
-	}
-
-	return user.ID, nil
+	return userID, nil
 }
