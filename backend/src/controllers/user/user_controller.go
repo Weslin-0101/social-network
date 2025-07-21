@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"backend/src/database"
+	"backend/src/exceptions"
 	"backend/src/interfaces"
 	"backend/src/model"
 	"backend/src/repositories"
@@ -44,26 +45,26 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		exceptions.HandleError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	var user model.User
 	if err := json.Unmarshal(bodyRequest, &user); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		exceptions.HandleError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	userID, err := repo.CreateUser(user)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
 		return
 	}
 
