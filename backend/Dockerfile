@@ -34,6 +34,8 @@ WORKDIR  /home/appuser/
 
 COPY --from=builder /app/main .
 
+COPY migrations ./migrations
+
 RUN chmod +x main
 
 USER appuser

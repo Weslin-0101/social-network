@@ -29,6 +29,11 @@ func Load() {
 		log.Println("No .env file found, using default values from system")
 	}
 
+	DBHost = os.Getenv("DB_HOST")
+	if DBHost == "" {
+		DBHost = "localhost"
+	}
+
 	DBPort, err = strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
 		DBPort = 5432

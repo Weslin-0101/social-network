@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 )
 
@@ -32,6 +33,13 @@ func main() {
 		}
 		os.Exit(0)
 	}()
+	
+	db := database.GetDB()
+	migrationPath, _ := filepath.Abs("./migrations")
+	if err := database.RunMigrations(db, migrationPath); err != nil {
+		log.Fatal("Failed to run migrations:", err)
+	}
+	fmt.Println("Migrations completed successfully.")
 
 	fmt.Println("Running the backend server...")
 	router := router.Generate()

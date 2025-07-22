@@ -1,24 +1,4 @@
 services:
-  app:
-    build: .
-    container_name: social-network-app
-    ports:
-      - "5000:5000"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=password
-      - DB_NAME=social_network
-      - DB_SSLMODE=disable
-      - API_PORT=5000
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - social-network
-
   db:
     image: postgres:15-alpine
     container_name: social-network-db
@@ -37,6 +17,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - social-network
+      
+  app:
+    build: .
+    container_name: social-network-app
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=social_network
+      - DB_SSLMODE=disable
+      - API_PORT=5000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - social-network
 

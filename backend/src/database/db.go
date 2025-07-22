@@ -4,6 +4,8 @@ import (
 	"backend/src/config"
 	"database/sql"
 	"fmt"
+
+	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
@@ -23,6 +25,10 @@ func ConnectDB() error {
 	fmt.Println("Database connection established successfully")
 
 	return nil
+}
+
+func GetDB() *sql.DB {
+	return DB
 }
 
 func CloseDB() error {
