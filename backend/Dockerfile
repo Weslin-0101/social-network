@@ -30,20 +30,23 @@ RUN apk --no-cache add ca-certificates tzdata libc6-compat
 
 RUN adduser -D -s /bin/sh appuser
 
-WORKDIR  /home/appuser/
+WORKDIR /home/appuser/
 
+# Copiar o binário
 COPY --from=builder /app/main .
 
-COPY migrations ./migrations
+# Copiar migrations (certifique-se que existe)
+COPY --from=builder /app/migrations/ ./migrations/
 
 RUN chmod +x main
 
 USER appuser
 
-# Expor a porta (ajuste conforme necessário)
+# Expor a porta
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+
 # Comando para executar a aplicação
 CMD ["./main"]
