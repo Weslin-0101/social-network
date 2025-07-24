@@ -31,6 +31,10 @@ func initRepository() {
 }
 
 func GetUserRepository() (interfaces.UserRepositoryInterface, error) {
+	if userRepo != nil {
+		return userRepo, repoErr
+	}
+	
 	initRepository()
 	if repoErr != nil {
 		return nil, repoErr

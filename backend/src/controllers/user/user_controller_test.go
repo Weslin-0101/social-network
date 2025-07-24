@@ -73,6 +73,9 @@ func TestCreateUser_Success(t *testing.T) {
 
 	CreateUser(rr, req)
 
+	t.Logf("Status code: %d", rr.Code)
+	t.Logf("Response body: %s", rr.Body.String())
+
 	if rr.Code != http.StatusCreated {
 		t.Errorf("expected status %d, got %d", http.StatusCreated, rr.Code)
 	}
