@@ -65,6 +65,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := user.BeforeCreate(); err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
 	userID, err := repo.CreateUser(user)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
