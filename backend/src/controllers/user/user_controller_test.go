@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 )
 
 // ============ Implementation of Mocks and Stubs =============
@@ -63,7 +62,6 @@ func TestCreateUser_Success(t *testing.T) {
 		Nickname: "Test User",
 		Email: "test@gmail.com",
 		Password: "password123",
-		CreatedAt: time.Now(),
 	}
 
 	userJSON, _ := json.Marshal(user)
@@ -93,6 +91,44 @@ func TestCreateUser_Success(t *testing.T) {
 
 	if _, exists := response["user_id"]; !exists {
 		t.Error("response should contain user_id")
+	}
+}
+
+func TestCreateUser_ValidationError(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	user := model.User{
+		Username: "",
+		Nickname: "Test User",
+		Email: "teste@gmail.com",
+		Password: "password123",
+	}
+
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	CreateUser(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+	}
+
+	expectedMsg := "username is required"
+	if !strings.Contains(rr.Body.String(), expectedMsg) {
+		t.Errorf("expected body to contain %q, got %q", expectedMsg, rr.Body.String())
+	}
+
+	var response map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	if err != nil {
+		t.Errorf("failed to unmarshal response: %v", err)
+	}
+	if response["error"] == nil {
+		t.Error("response should contain error message")
 	}
 }
 
