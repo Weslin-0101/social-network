@@ -19,7 +19,7 @@ func NewPostgreUserRepository() *PostgreUserRepository {
 
 func (r *PostgreUserRepository) CreateUser(user model.User) (uint64, error) {
 	query := `
-		INSERT INTO users (username, nickname, email, password, created_at) 
+		INSERT INTO users (username, nickname, email, password) 
 		VALUES ($1, $2, $3, $4) 
 		RETURNING id
 	`
@@ -31,7 +31,6 @@ func (r *PostgreUserRepository) CreateUser(user model.User) (uint64, error) {
 		user.Nickname, 
 		user.Email,
 		user.Password,
-		user.CreatedAt,
 	).Scan(&userID)
 	
 	if err != nil {
