@@ -159,6 +159,43 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func GetUserByNickname(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	nickname := mux.Vars(r)["nickname"]
+	if nickname == "" {
+		exceptions.HandleError(w, http.StatusBadRequest, nil)
+		return
+	}
+
+	repo, err := GetUserRepository()
+	if err != nil {
+		log.Printf("Error getting user repository: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	user, err := repo.GetUserByNickname(nickname)
+	if err != nil {
+		if err == exceptions.ErrUserNotFound {
+			log.Printf("User with nickname %s not found", nickname)
+			exceptions.HandleError(w, http.StatusNotFound, err)
+			return
+		}
+		log.Printf("Error retrieving user by nickname: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response := map[string]interface{} {
+		"message": "User retrieved successfully",
+		"user": 	user,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
 func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("User updated successfully"))
 }

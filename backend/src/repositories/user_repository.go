@@ -6,6 +6,7 @@ import (
 	"backend/src/model"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 type PostgreUserRepository struct {
@@ -99,6 +100,35 @@ func (r *PostgreUserRepository) GetUserByID(userID uint64) (model.User, error) {
 			return model.User{}, exceptions.ErrUserNotFound
 		}
 		return model.User{}, fmt.Errorf("failed to get user by ID: %w", err)
+	}
+
+	return user, nil
+}
+
+func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, error) {
+	query := `
+		SELECT
+			id, username, nickname, email, created_at
+		FROM
+			users
+		WHERE
+			nickname = $1
+	`
+
+	var user model.User
+	err := r.db.QueryRow(query, strings.TrimSpace(nickname)).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Nickname,
+		&user.Email,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return model.User{}, exceptions.ErrUserNotFound
+		}
+		return model.User{}, fmt.Errorf("failed to get user by nickname: %w", err)
 	}
 
 	return user, nil
