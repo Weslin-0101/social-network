@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"backend/src/database"
+	"backend/src/exceptions"
 	"backend/src/model"
 	"database/sql"
 	"fmt"
@@ -72,4 +73,33 @@ func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {
 	}
 
 	return users, nil
+}
+
+func (r *PostgreUserRepository) GetUserByID(userID uint64) (model.User, error) {
+	query := `
+		SELECT
+			id, username, nickname, email, created_at
+		FROM
+			users
+		WHERE
+			id = $1
+	`
+
+	var user model.User
+	err := r.db.QueryRow(query, userID).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Nickname,
+		&user.Email,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return model.User{}, exceptions.ErrUserNotFound
+		}
+		return model.User{}, fmt.Errorf("failed to get user by ID: %w", err)
+	}
+
+	return user, nil
 }

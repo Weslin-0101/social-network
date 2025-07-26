@@ -10,7 +10,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -113,7 +116,47 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("User retrieved successfully"))
+	w.Header().Set("Content-Type", "application/json")
+
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
+	if err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	repo, err := GetUserRepository()
+	if err != nil {
+		log.Printf("Error getting user repository: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	user, err := repo.GetUserByID(uint64(userID))
+	if err != nil {
+		if err == exceptions.ErrUserNotFound {
+			log.Printf("User with ID %d not found", userID)
+			exceptions.HandleError(w, http.StatusNotFound, err)
+			return
+		}
+
+		log.Printf("Error retrieving user by ID: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if user == (model.User{}) {
+		exceptions.HandleError(w, http.StatusNotFound, nil)
+		return
+	}
+
+	response := map[string]interface{}{
+		"message": 	"User retrieved successfully",
+		"user": 	user,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
 
 func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
