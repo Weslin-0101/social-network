@@ -292,7 +292,7 @@ func TestGetUserByID_NotFound(t *testing.T) {
 	}
 }
 
-func TestGetUserByNickname(t *testing.T) {
+func TestGetUserByNickname_Success(t *testing.T) {
 	mockRepo := NewMockUserRepository()
 	setTestRepository(mockRepo)
 	defer restoreRepository()
@@ -340,6 +340,27 @@ func TestGetUserByNickname(t *testing.T) {
 
 	if response["user"] == nil {
 		t.Error("response should contain user data")
+	}
+}
+
+func TestGetUserByNickname_NotFound(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	nickname := "nonexistent"
+	req := httptest.NewRequest("GET", "/users/nickname/"+nickname, nil)
+	req = mux.SetURLVars(req, map[string]string{"nickname": nickname})
+	rr := httptest.NewRecorder()
+
+	GetUserByNickname(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
+	}
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
 	}
 }
 
