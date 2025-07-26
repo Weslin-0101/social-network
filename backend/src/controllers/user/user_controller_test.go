@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 // ============ Implementation of Mocks and Stubs =============
@@ -52,6 +54,18 @@ func (m *MockUserRepository) GetAllUsers() ([]model.User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func (m *MockUserRepository) GetUserByID(userID uint64) (model.User, error) {
+	if m.failGet {
+		return model.User{}, fmt.Errorf("simulated get error")
+	}
+
+	user, exists := m.users[userID]
+	if !exists {
+		return model.User{}, nil
+	}
+	return user, nil
 }
 
 func setTestRepository(repo interfaces.UserRepositoryInterface) {
@@ -183,20 +197,64 @@ func TestGetAllUsers(t *testing.T) {
 	}
 }
 
-// func TestGetUserByID(t *testing.T) {
-// 	req := httptest.NewRequest(http.MethodGet, "/users/1", nil)
-// 	rr := httptest.NewRecorder()
+func TestGetUserByID(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
 
-// 	controllers.GetUserByID(rr, req)
+	user := model.User{
+		Username: "Test User",
+		Nickname: "Test User",
+		Email: "email@gmail.com",
+		Password: "password123",
+	}
 
-// 	if rr.Code != http.StatusOK {
-// 		t.Errorf("expected status 200, got %d", rr.Code)
-// 	}
-// 	expected := "User retrieved successfully"
-// 	if !strings.Contains(rr.Body.String(), expected) {
-// 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
-// 	}
-// }
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	CreateUser(rr, req)
+
+	var createResponse map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
+	if err != nil {
+		t.Errorf("failed to unmarshal create response: %v", err)
+	}
+
+	userID, exists := createResponse["user_id"]
+	if !exists {
+		t.Fatal("user_id not found in create response")
+	}
+
+	userIDStr := fmt.Sprintf("%.0f", userID.(float64));
+
+	req = httptest.NewRequest("GET", "/users/"+userIDStr, nil)
+	req = mux.SetURLVars(req, map[string]string{"userID": userIDStr})
+
+	rr = httptest.NewRecorder()
+
+	GetUserByID(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", rr.Code)
+	}
+
+	expected := "User retrieved successfully"
+	if !strings.Contains(rr.Body.String(), expected) {
+		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
+	}
+
+	var response map[string]interface{}
+	err = json.Unmarshal(rr.Body.Bytes(), &response)
+	if err != nil {
+		t.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	if response["user"] == nil {
+		t.Error("response should contain user data")
+	}
+}
 
 // func TestUpdateUserByID(t *testing.T) {
 // 	req := httptest.NewRequest(http.MethodPut, "/users/1", nil)
