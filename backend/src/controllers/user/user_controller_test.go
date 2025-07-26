@@ -42,6 +42,18 @@ func (m *MockUserRepository) CreateUser(user model.User) (uint64, error) {
 	return user.ID, nil
 }
 
+func (m *MockUserRepository) GetAllUsers() ([]model.User, error) {
+	if m.failGet {
+		return nil, fmt.Errorf("simulated get error")
+	}
+
+	var users []model.User
+	for _, user := range m.users {
+		users = append(users, user)
+	}
+	return users, nil
+}
+
 func setTestRepository(repo interfaces.UserRepositoryInterface) {
 	userRepo = repo
 }
@@ -132,20 +144,44 @@ func TestCreateUser_ValidationError(t *testing.T) {
 	}
 }
 
-// func TestGetAllUsers(t *testing.T) {
-// 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-// 	rr := httptest.NewRecorder()
+func TestGetAllUsers(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
 
-// 	controllers.GetAllUsers(rr, req)
+	user := model.User{
+		Username: "Tester User",
+		Nickname: "Test User",
+		Email: "teste@gmail.com",
+		Password: "password123",
+	}
 
-// 	if rr.Code != http.StatusOK {
-// 		t.Errorf("expected status 200, got %d", rr.Code)
-// 	}
-// 	expected := "All users retrieved successfully"
-// 	if !strings.Contains(rr.Body.String(), expected) {
-// 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
-// 	}
-// }
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	CreateUser(rr, req)
+	
+	req = httptest.NewRequest("GET", "/users", nil)
+	rr = httptest.NewRecorder()
+
+	GetAllUsers(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	var users []model.User
+	err := json.Unmarshal(rr.Body.Bytes(), &users)
+	if err != nil {
+		t.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	if len(users) == 0 {
+		t.Error("expected at least one user, got none")
+	}
+}
 
 // func TestGetUserByID(t *testing.T) {
 // 	req := httptest.NewRequest(http.MethodGet, "/users/1", nil)
