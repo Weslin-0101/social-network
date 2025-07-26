@@ -24,6 +24,12 @@ var userRoutes = []Route {
 		AuthRequired: false,
 	},
 	{
+		URI: "/users/nickname/{nickname}",
+		Method: "GET",
+		Function: controllers.GetUserByNickname,
+		AuthRequired: false,
+	},
+	{
 		URI: "/users/{userID}",
 		Method: "PUT",
 		Function: controllers.UpdateUserByID,
