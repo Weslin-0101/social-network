@@ -69,6 +69,20 @@ func (m *MockUserRepository) GetUserByID(userID uint64) (model.User, error) {
 	return user, nil
 }
 
+func (m *MockUserRepository) GetUserByNickname(nickname string) (model.User, error) {
+	if m.failGet {
+		return model.User{}, fmt.Errorf("simulated get error")
+	}
+
+	for _, user := range m.users {
+		if user.Nickname == nickname {
+			return user, nil
+		}
+	}
+
+	return model.User{}, exceptions.ErrUserNotFound
+}
+
 func setTestRepository(repo interfaces.UserRepositoryInterface) {
 	userRepo = repo
 }
@@ -275,6 +289,57 @@ func TestGetUserByID_NotFound(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
+	}
+}
+
+func TestGetUserByNickname(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	user := model.User{
+		Username: "Test User",
+		Nickname: "testuser",
+		Email: "test@gmail.com",
+		Password: "password123",
+	}
+
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	CreateUser(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Errorf("expected status %d, got %d", http.StatusCreated, rr.Code)
+	}
+
+	nickname := user.Nickname
+	req = httptest.NewRequest("GET", "/users/nickname/"+nickname, nil)
+	req = mux.SetURLVars(req, map[string]string{"nickname": nickname})
+	rr = httptest.NewRecorder()
+
+	GetUserByNickname(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", rr.Code)
+		t.Logf("Response body: %s", rr.Body.String())
+	}
+
+	expected := "User retrieved successfully"
+	if !strings.Contains(rr.Body.String(), expected) {
+		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
+	}
+
+	var response map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	if err != nil {
+		t.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	if response["user"] == nil {
+		t.Error("response should contain user data")
 	}
 }
 
