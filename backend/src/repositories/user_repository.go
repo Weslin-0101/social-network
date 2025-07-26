@@ -39,3 +39,37 @@ func (r *PostgreUserRepository) CreateUser(user model.User) (uint64, error) {
 
 	return userID, nil
 }
+
+func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {
+	query := `
+		SELECT 
+			id, username, nickname, email, created_at
+		FROM
+			users
+	`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all users: %w", err)
+	}
+
+	defer rows.Close()
+	var users []model.User
+
+	for rows.Next() {
+		var user model.User
+		if err = rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Nickname,
+			&user.Email,
+			&user.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}

@@ -87,7 +87,29 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("All users retrieved successfully"))
+	w.Header().Set("Content-Type", "application/json")
+
+	repo, err := GetUserRepository()
+	if err != nil {
+		log.Printf("Error getting user repository: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	users, err := repo.GetAllUsers()
+	if err != nil {
+		log.Printf("Error retrieving users: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if len(users) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(users)
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
