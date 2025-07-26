@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"backend/src/exceptions"
 	"backend/src/interfaces"
 	"backend/src/model"
 	"bytes"
@@ -63,7 +64,7 @@ func (m *MockUserRepository) GetUserByID(userID uint64) (model.User, error) {
 
 	user, exists := m.users[userID]
 	if !exists {
-		return model.User{}, nil
+		return model.User{}, exceptions.ErrUserNotFound
 	}
 	return user, nil
 }
@@ -253,6 +254,27 @@ func TestGetUserByID(t *testing.T) {
 
 	if response["user"] == nil {
 		t.Error("response should contain user data")
+	}
+}
+
+func TestGetUserByID_NotFound(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	userID := "999"
+	req := httptest.NewRequest("GET", "/users/"+userID, nil)
+	req = mux.SetURLVars(req, map[string]string{"userID": userID})
+	rr := httptest.NewRecorder()
+
+	GetUserByID(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
+	}
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
 	}
 }
 
