@@ -101,6 +101,20 @@ func (m *MockUserRepository) UpdateUserByID(userID uint64, user model.User) (mod
 	return existingUser, nil
 }
 
+func (m *MockUserRepository) DeleteUserByID(userID uint64) error {
+	if m.failGet {
+		return fmt.Errorf("simulated delete error")
+	}
+
+	_, exists := m.users[userID]
+	if !exists {
+		return exceptions.ErrUserNotFound
+	}
+
+	delete(m.users, userID)
+	return nil
+}
+
 func setTestRepository(repo interfaces.UserRepositoryInterface) {
 	userRepo = repo
 }
@@ -434,32 +448,48 @@ func TestUpdateUserByID_Success(t *testing.T) {
 	}
 }
 
-// func TestUpdateUserByID(t *testing.T) {
-// 	req := httptest.NewRequest(http.MethodPut, "/users/1", nil)
-// 	rr := httptest.NewRecorder()
+func TestDeleteUserByID(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
 
-// 	controllers.UpdateUserByID(rr, req)
+	user := model.User{
+		Username: "testuser",
+		Nickname: "Test User",
+		Email: "test@gmail.com",
+		Password: "password123",
+	}
 
-// 	if rr.Code != http.StatusOK {
-// 		t.Errorf("expected status 200, got %d", rr.Code)
-// 	}
-// 	expected := "User updated successfully"
-// 	if !strings.Contains(rr.Body.String(), expected) {
-// 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
-// 	}
-// }
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
 
-// func TestDeleteUserByID(t *testing.T) {
-// 	req := httptest.NewRequest(http.MethodDelete, "/users/1", nil)
-// 	rr := httptest.NewRecorder()
+	CreateUser(rr, req)
 
-// 	controllers.DeleteUserByID(rr, req)
+	var createResponse map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
+	if err != nil {
+		t.Errorf("failed to unmarshal create response: %v", err)
+	}
+	userID, exists := createResponse["user_id"]
+	if !exists {
+		t.Fatal("user_id not found in create response")
+	}
 
-// 	if rr.Code != http.StatusOK {
-// 		t.Errorf("expected status 200, got %d", rr.Code)
-// 	}
-// 	expected := "User deleted successfully"
-// 	if !strings.Contains(rr.Body.String(), expected) {
-// 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
-// 	}
-// }
+	userIDStr := fmt.Sprintf("%.0f", userID.(float64))
+	req = httptest.NewRequest("DELETE", "/users/"+userIDStr, nil)
+	req = mux.SetURLVars(req, map[string]string{"userID": userIDStr})
+	rr = httptest.NewRecorder()
+
+	DeleteUserByID(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	expected := "User deleted successfully"
+	if !strings.Contains(rr.Body.String(), expected) {
+		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
+	}
+}
