@@ -246,5 +246,38 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("User deleted successfully"))
+	w.Header().Set("Content-Type", "application/json")
+
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
+	if err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	repo, err := GetUserRepository()
+	if err != nil {
+		log.Printf("Error getting user repository: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = repo.DeleteUserByID(userID)
+	if err != nil {
+		if err == exceptions.ErrUserNotFound {
+			log.Printf("User with ID %d not found", userID)
+			exceptions.HandleError(w, http.StatusNotFound, err)
+			return
+		}
+		log.Printf("Error deleting user by ID: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response := map[string]string{
+		"message": "User deleted successfully",
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

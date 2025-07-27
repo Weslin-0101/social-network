@@ -170,3 +170,26 @@ func (r *PostgreUserRepository) UpdateUserByID(userID uint64, user model.User) (
 
 	return updatedUser, nil
 }
+
+func (r *PostgreUserRepository) DeleteUserByID(userID uint64) error {
+	query := `
+		DELETE FROM users
+		WHERE id = $1
+	`
+
+	result, err := r.db.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user by ID: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return exceptions.ErrUserNotFound
+	}
+
+	return nil
+}
