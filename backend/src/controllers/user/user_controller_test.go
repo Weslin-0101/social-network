@@ -83,6 +83,24 @@ func (m *MockUserRepository) GetUserByNickname(nickname string) (model.User, err
 	return model.User{}, exceptions.ErrUserNotFound
 }
 
+func (m *MockUserRepository) UpdateUserByID(userID uint64, user model.User) (model.User, error) {
+	if m.failGet {
+		return model.User{}, fmt.Errorf("simulated update error")
+	}
+
+	existingUser, exists := m.users[userID]
+	if !exists {
+		return model.User{}, exceptions.ErrUserNotFound
+	}
+
+	existingUser.Username = user.Username
+	existingUser.Nickname = user.Nickname
+	existingUser.Email = user.Email
+	m.users[userID] = existingUser
+
+	return existingUser, nil
+}
+
 func setTestRepository(repo interfaces.UserRepositoryInterface) {
 	userRepo = repo
 }
@@ -361,6 +379,58 @@ func TestGetUserByNickname_NotFound(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("expected status %d, got %d", http.StatusNotFound, rr.Code)
+	}
+}
+
+func TestUpdateUserByID_Success(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	user := model.User{
+		Username: "test",
+		Nickname: "Test User",
+		Email: "test@gmail.com",
+		Password: "password123",
+	}
+
+	userJSON, _ := json.Marshal(user)
+	req := httptest.NewRequest("POST", "/users", bytes.NewBuffer(userJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	CreateUser(rr, req)
+
+	var createResponse map[string]interface{}
+	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
+	if err != nil {
+		t.Errorf("failed to unmarshal create response: %v", err)
+	}
+
+	userID, exists := createResponse["user_id"]
+	if !exists {
+		t.Fatal("user_id not found in create response")
+	}
+
+	userIDStr := fmt.Sprintf("%.0f", userID.(float64))
+	
+	updatedUser := model.User{
+		Username: "updateduser",
+		Nickname: "updatednick",
+		Email: "test@gmail.com",
+		Password: "password123",
+	}
+	updatedUserJSON, _ := json.Marshal(updatedUser)
+
+	req = httptest.NewRequest("PUT", "/users/"+userIDStr, bytes.NewBuffer(updatedUserJSON))
+	req.Header.Set("Content-Type", "application/json")
+	req = mux.SetURLVars(req, map[string]string{"userID": userIDStr})
+	rr = httptest.NewRecorder()
+
+	UpdateUserByID(rr, req)
+	
+	if rr.Code != http.StatusNoContent {
+		t.Errorf("expected status 200, got %d", rr.Code)
 	}
 }
 
