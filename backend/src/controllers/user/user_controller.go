@@ -68,7 +68,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := user.BeforeCreate(); err != nil {
+	if err := user.BeforeCreate("register"); err != nil {
 		exceptions.HandleError(w, http.StatusBadRequest, err)
 		return
 	}
@@ -197,7 +197,52 @@ func GetUserByNickname(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("User updated successfully"))
+	w.Header().Set("Content-Type", "application/json")
+
+	parameters := mux.Vars(r)
+	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
+	if err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	bodyRequest, err := io.ReadAll(r.Body)
+	if err != nil {
+		exceptions.HandleError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var user model.User
+	if err := json.Unmarshal(bodyRequest, &user); err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = user.BeforeCreate("update"); err != nil {
+		exceptions.HandleError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	repo, err := GetUserRepository()
+	if err != nil {
+		log.Printf("Error getting user repository: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	_, err = repo.UpdateUserByID(userID, user)
+	if err != nil {
+		if err == exceptions.ErrUserNotFound {
+			log.Printf("User with ID %d not found", userID)
+			exceptions.HandleError(w, http.StatusNotFound, err)
+			return
+		}
+		log.Printf("Error updating user by ID: %v", err)
+		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteUserByID(w http.ResponseWriter, r *http.Request) {

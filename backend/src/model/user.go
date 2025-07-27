@@ -15,8 +15,8 @@ type User struct {
 	CreatedAt 	time.Time	`json:"created_at,omitempty"`
 }
 
-func (u *User) BeforeCreate() error {
-	if err := u.validUser(); err != nil {
+func (u *User) BeforeCreate(step string) error {
+	if err := u.validUser(step); err != nil {
 		return err
 	}
 
@@ -24,7 +24,7 @@ func (u *User) BeforeCreate() error {
 	return nil
 }
 
-func (u *User) validUser() error {
+func (u *User) validUser(step string) error {
 	if u.Username == "" {
 		return errors.New("username is required")
 	}
@@ -37,7 +37,7 @@ func (u *User) validUser() error {
 		return errors.New("email is required")
 	}
 
-	if u.Password == "" {
+	if step == "register" && u.Password == "" {
 		return errors.New("password is required")
 	}
 

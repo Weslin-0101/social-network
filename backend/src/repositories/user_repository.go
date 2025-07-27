@@ -133,3 +133,40 @@ func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, 
 
 	return user, nil
 }
+
+func (r *PostgreUserRepository) UpdateUserByID(userID uint64, user model.User) (model.User, error) {
+	query := `
+		UPDATE users
+		SET
+			username = $1,
+			nickname = $2,
+			email = $3
+		WHERE
+			id = $4
+		RETURNING id, username, nickname, email, created_at
+	`
+
+	var updatedUser model.User
+	err := r.db.QueryRow(
+		query,
+		user.Username,
+		user.Nickname,
+		user.Email,
+		userID,
+	).Scan(
+		&updatedUser.ID,
+		&updatedUser.Username,
+		&updatedUser.Nickname,
+		&updatedUser.Email,
+		&updatedUser.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return model.User{}, exceptions.ErrUserNotFound
+		}
+		return model.User{}, fmt.Errorf("failed to update user by ID: %w", err)
+	}
+
+	return updatedUser, nil
+}
