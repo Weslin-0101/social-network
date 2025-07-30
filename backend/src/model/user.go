@@ -1,6 +1,7 @@
 package model
 
 import (
+	"backend/src/security"
 	"errors"
 	"strings"
 	"time"
@@ -22,7 +23,10 @@ func (u *User) BeforeCreate(step string) error {
 		return err
 	}
 
-	u.formatInput()
+	if err := u.formatInput(step); err != nil {
+		return err
+	}
+	
 	return nil
 }
 
@@ -50,8 +54,17 @@ func (u *User) validUser(step string) error {
 	return nil
 }
 
-func (u *User) formatInput() {
+func (u *User) formatInput(step string) error {
 	u.Username = strings.TrimSpace(u.Username)
 	u.Nickname = strings.TrimSpace(u.Nickname)
 	u.Email = strings.TrimSpace(u.Email)
+
+	if step == "register" {
+		passwordHash, err := security.HashPassword(u.Password)
+		if err != nil { return err }
+
+		u.Password = string(passwordHash)
+	}
+
+	return nil
 }
