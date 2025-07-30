@@ -31,18 +31,15 @@ func NewMockUserRepository() *MockUserRepository {
 	}
 }
 
-func (m *MockUserRepository) CreateUser(user model.User) (uint64, error) {
+func (m *MockUserRepository) CreateUser(user model.User) (model.User, error) {
 	if m.failCreate {
-		return 0, fmt.Errorf("simulated create error")
+		return model.User{}, fmt.Errorf("simulated create error")
 	}
 
-	if user.ID == 0 {
-		user.ID = m.nextId
-		m.nextId++
-	}
-
-	m.users[user.ID] = user
-	return user.ID, nil
+	user.ID = m.nextId
+	m.users[m.nextId] = user
+	m.nextId++
+	return user, nil
 }
 
 func (m *MockUserRepository) GetAllUsers() ([]model.User, error) {
@@ -144,9 +141,6 @@ func TestCreateUser_Success(t *testing.T) {
 
 	CreateUser(rr, req)
 
-	t.Logf("Status code: %d", rr.Code)
-	t.Logf("Response body: %s", rr.Body.String())
-
 	if rr.Code != http.StatusCreated {
 		t.Errorf("expected status %d, got %d", http.StatusCreated, rr.Code)
 	}
@@ -162,8 +156,8 @@ func TestCreateUser_Success(t *testing.T) {
 		t.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if _, exists := response["user_id"]; !exists {
-		t.Error("response should contain user_id")
+	if _, exists := response["user"]; !exists {
+		t.Error("response should contain user data")
 	}
 }
 
