@@ -19,27 +19,34 @@ func NewPostgreUserRepository() *PostgreUserRepository {
 	}
 }
 
-func (r *PostgreUserRepository) CreateUser(user model.User) (uint64, error) {
+func (r *PostgreUserRepository) CreateUser(user model.User) (model.User, error) {
 	query := `
 		INSERT INTO users (username, nickname, email, password) 
 		VALUES ($1, $2, $3, $4) 
-		RETURNING id
+		RETURNING id, username, nickname, email, password, created_at
 	`
 
-	var userID uint64
+	var createUser model.User
 	err := r.db.QueryRow(
 		query, 
 		user.Username, 
 		user.Nickname, 
 		user.Email,
 		user.Password,
-	).Scan(&userID)
-	
+	).Scan(
+		&createUser.ID,
+		&createUser.Username,
+		&createUser.Nickname,
+		&createUser.Email,
+		&createUser.Password,
+		&createUser.CreatedAt,
+	)
+
 	if err != nil {
-		return 0, fmt.Errorf("failed to create user: %w", err)
+		return model.User{}, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return userID, nil
+	return createUser, nil
 }
 
 func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {

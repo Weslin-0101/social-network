@@ -73,7 +73,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := repo.CreateUser(user)
+	user, err = repo.CreateUser(user)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
 		exceptions.HandleError(w, http.StatusInternalServerError, err)
@@ -82,7 +82,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]interface{}{
 		"message": "User created successfully",
-		"user_id": userID,
+		"user":    user,
 	}
 
 	w.WriteHeader(http.StatusCreated)
