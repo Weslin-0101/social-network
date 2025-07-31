@@ -52,31 +52,31 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
 	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrBadRequest)
 		return
 	}
 
 	var user model.User
 	if err := json.Unmarshal(bodyRequest, &user); err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrBadRequest)
 		return
 	}
 
 	if err := user.BeforeCreate("register"); err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
 	user, err = repo.CreateUser(user)
 	if err != nil {
 		log.Printf("Error creating user: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -95,14 +95,14 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
 	users, err := repo.GetAllUsers()
 	if err != nil {
 		log.Printf("Error retrieving users: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
@@ -121,14 +121,14 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
 	if err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrInvalidUserID)
 		return
 	}
 
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
@@ -136,17 +136,17 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == exceptions.ErrUserNotFound {
 			log.Printf("User with ID %d not found", userID)
-			exceptions.HandleError(w, http.StatusNotFound, err)
+			exceptions.HandleError(w, r, http.StatusNotFound, exceptions.ErrUserNotFound)
 			return
 		}
 
 		log.Printf("Error retrieving user by ID: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
 	if user == (model.User{}) {
-		exceptions.HandleError(w, http.StatusNotFound, nil)
+		exceptions.HandleError(w, r, http.StatusNotFound, nil)
 		return
 	}
 
@@ -164,14 +164,14 @@ func GetUserByNickname(w http.ResponseWriter, r *http.Request) {
 
 	nickname := mux.Vars(r)["nickname"]
 	if nickname == "" {
-		exceptions.HandleError(w, http.StatusBadRequest, nil)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrInvalidUserNickname)
 		return
 	}
 
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
@@ -179,11 +179,11 @@ func GetUserByNickname(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == exceptions.ErrUserNotFound {
 			log.Printf("User with nickname %s not found", nickname)
-			exceptions.HandleError(w, http.StatusNotFound, err)
+			exceptions.HandleError(w, r, http.StatusNotFound, exceptions.ErrUserNotFound)
 			return
 		}
 		log.Printf("Error retrieving user by nickname: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
@@ -202,31 +202,31 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
 	if err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrInvalidUserID)
 		return
 	}
 
 	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {
-		exceptions.HandleError(w, http.StatusUnprocessableEntity, err)
+		exceptions.HandleError(w, r, http.StatusUnprocessableEntity, exceptions.ErrBadRequest)
 		return
 	}
 
 	var user model.User
 	if err := json.Unmarshal(bodyRequest, &user); err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrBadRequest)
 		return
 	}
 
 	if err = user.BeforeCreate("update"); err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrBadRequest)
 		return
 	}
 
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrDatabaseConnection)
 		return
 	}
 
@@ -234,11 +234,11 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == exceptions.ErrUserNotFound {
 			log.Printf("User with ID %d not found", userID)
-			exceptions.HandleError(w, http.StatusNotFound, err)
+			exceptions.HandleError(w, r, http.StatusNotFound, exceptions.ErrUserNotFound)
 			return
 		}
 		log.Printf("Error updating user by ID: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
 		return
 	}
 
@@ -251,14 +251,14 @@ func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
 	parameters := mux.Vars(r)
 	userID, err := strconv.ParseUint(parameters["userID"], 10, 64)
 	if err != nil {
-		exceptions.HandleError(w, http.StatusBadRequest, err)
+		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrInvalidUserID)
 		return
 	}
 
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrDatabaseConnection)
 		return
 	}
 
@@ -266,11 +266,11 @@ func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == exceptions.ErrUserNotFound {
 			log.Printf("User with ID %d not found", userID)
-			exceptions.HandleError(w, http.StatusNotFound, err)
+			exceptions.HandleError(w, r, http.StatusNotFound, exceptions.ErrUserNotFound)
 			return
 		}
 		log.Printf("Error deleting user by ID: %v", err)
-		exceptions.HandleError(w, http.StatusInternalServerError, err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrDatabaseConnection)
 		return
 	}
 
