@@ -23,7 +23,7 @@ func (r *PostgreUserRepository) CreateUser(user model.User) (model.User, error) 
 	query := `
 		INSERT INTO users (username, nickname, email, password) 
 		VALUES ($1, $2, $3, $4) 
-		RETURNING id, username, nickname, email, password, created_at
+		RETURNING id, username, nickname, email, password, type, created_at
 	`
 
 	var createUser model.User
@@ -39,6 +39,7 @@ func (r *PostgreUserRepository) CreateUser(user model.User) (model.User, error) 
 		&createUser.Nickname,
 		&createUser.Email,
 		&createUser.Password,
+		&createUser.Type,
 		&createUser.CreatedAt,
 	)
 
@@ -52,7 +53,7 @@ func (r *PostgreUserRepository) CreateUser(user model.User) (model.User, error) 
 func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {
 	query := `
 		SELECT 
-			id, username, nickname, email, created_at
+			id, username, nickname, email, type, created_at
 		FROM
 			users
 	`
@@ -72,6 +73,7 @@ func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {
 			&user.Username,
 			&user.Nickname,
 			&user.Email,
+			&user.Type,
 			&user.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -86,7 +88,7 @@ func (r *PostgreUserRepository) GetAllUsers() ([]model.User, error) {
 func (r *PostgreUserRepository) GetUserByID(userID uint64) (model.User, error) {
 	query := `
 		SELECT
-			id, username, nickname, email, created_at
+			id, username, nickname, email, type, created_at
 		FROM
 			users
 		WHERE
@@ -99,6 +101,7 @@ func (r *PostgreUserRepository) GetUserByID(userID uint64) (model.User, error) {
 		&user.Username,
 		&user.Nickname,
 		&user.Email,
+		&user.Type,
 		&user.CreatedAt,
 	)
 
@@ -115,7 +118,7 @@ func (r *PostgreUserRepository) GetUserByID(userID uint64) (model.User, error) {
 func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, error) {
 	query := `
 		SELECT
-			id, username, nickname, email, created_at
+			id, username, nickname, email, type, created_at
 		FROM
 			users
 		WHERE
@@ -128,6 +131,7 @@ func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, 
 		&user.Username,
 		&user.Nickname,
 		&user.Email,
+		&user.Type,
 		&user.CreatedAt,
 	)
 
@@ -150,7 +154,7 @@ func (r *PostgreUserRepository) UpdateUserByID(userID uint64, user model.User) (
 			email = $3
 		WHERE
 			id = $4
-		RETURNING id, username, nickname, email, created_at
+		RETURNING id, username, nickname, email, type, created_at
 	`
 
 	var updatedUser model.User
@@ -165,6 +169,7 @@ func (r *PostgreUserRepository) UpdateUserByID(userID uint64, user model.User) (
 		&updatedUser.Username,
 		&updatedUser.Nickname,
 		&updatedUser.Email,
+		&updatedUser.Type,
 		&updatedUser.CreatedAt,
 	)
 

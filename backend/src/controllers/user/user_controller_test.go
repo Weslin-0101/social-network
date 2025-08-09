@@ -11,9 +11,26 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 )
+
+// ============ Implementation of Types and Structs =============
+
+type UserData struct {
+	ID	   		uint64    	`json:"id,omitempty"`
+	Username 	string		`json:"username,omitempty"`
+	Nickname 	string		`json:"nickname,omitempty"`
+	Email   	string		`json:"email,omitempty"`
+	Type		string		`json:"type,omitempty"`
+	CreatedAt 	time.Time	`json:"created_at,omitempty"`
+}
+
+type ApiResponse struct {
+	Message 	string 		`json:"message"`
+	User		UserData 	`json:"user"`
+}
 
 // ============ Implementation of Mocks and Stubs =============
 
@@ -150,13 +167,13 @@ func TestCreateUser_Success(t *testing.T) {
 		t.Errorf("expected body to contain %q, got %q", expectedMsg, rr.Body.String())
 	}
 
-	var response map[string]interface{}
+	var response ApiResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	if err != nil {
 		t.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if _, exists := response["user"]; !exists {
+	if exists := response.User.ID > 0; !exists {
 		t.Error("response should contain user data")
 	}
 }
@@ -184,17 +201,17 @@ func TestCreateUser_ValidationError(t *testing.T) {
 		t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
 	}
 
-	expectedMsg := "username is required"
+	expectedMsg := "Username is required"
 	if !strings.Contains(rr.Body.String(), expectedMsg) {
 		t.Errorf("expected body to contain %q, got %q", expectedMsg, rr.Body.String())
 	}
 
-	var response map[string]interface{}
+	var response ApiResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	if err != nil {
 		t.Errorf("failed to unmarshal response: %v", err)
 	}
-	if response["error"] == nil {
+	if response.Message == "" {
 		t.Error("response should contain error message")
 	}
 }
@@ -205,7 +222,7 @@ func TestGetAllUsers(t *testing.T) {
 	defer restoreRepository()
 
 	user := model.User{
-		Username: "Tester User",
+		Username: "TestUser",
 		Nickname: "Test User",
 		Email: "teste@gmail.com",
 		Password: "password123",
@@ -244,7 +261,7 @@ func TestGetUserByID(t *testing.T) {
 	defer restoreRepository()
 
 	user := model.User{
-		Username: "Test User",
+		Username: "TestUser",
 		Nickname: "Test User",
 		Email: "email@gmail.com",
 		Password: "password123",
@@ -257,21 +274,19 @@ func TestGetUserByID(t *testing.T) {
 
 	CreateUser(rr, req)
 
-	var createResponse map[string]interface{}
-	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
+	var apiResponse ApiResponse
+	err := json.Unmarshal(rr.Body.Bytes(), &apiResponse)
 	if err != nil {
 		t.Errorf("failed to unmarshal create response: %v", err)
 	}
 
-	userID, exists := createResponse["user_id"]
-	if !exists {
-		t.Fatal("user_id not found in create response")
+	userID := apiResponse.User.ID
+	if userID <= 0 {
+		t.Fatal("user ID should be greater than 0")
 	}
 
-	userIDStr := fmt.Sprintf("%.0f", userID.(float64));
-
-	req = httptest.NewRequest("GET", "/users/"+userIDStr, nil)
-	req = mux.SetURLVars(req, map[string]string{"userID": userIDStr})
+	req = httptest.NewRequest("GET", "/users/"+fmt.Sprintf("%d", userID), nil)
+	req = mux.SetURLVars(req, map[string]string{"userID": fmt.Sprintf("%d", userID)})
 
 	rr = httptest.NewRecorder()
 
@@ -286,14 +301,10 @@ func TestGetUserByID(t *testing.T) {
 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
 	}
 
-	var response map[string]interface{}
+	var response ApiResponse
 	err = json.Unmarshal(rr.Body.Bytes(), &response)
 	if err != nil {
 		t.Errorf("failed to unmarshal response: %v", err)
-	}
-
-	if response["user"] == nil {
-		t.Error("response should contain user data")
 	}
 }
 
@@ -324,7 +335,7 @@ func TestGetUserByNickname_Success(t *testing.T) {
 	defer restoreRepository()
 
 	user := model.User{
-		Username: "Test User",
+		Username: "TestUser",
 		Nickname: "testuser",
 		Email: "test@gmail.com",
 		Password: "password123",
@@ -358,13 +369,13 @@ func TestGetUserByNickname_Success(t *testing.T) {
 		t.Errorf("expected body to contain %q, got %q", expected, rr.Body.String())
 	}
 
-	var response map[string]interface{}
+	var response ApiResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	if err != nil {
 		t.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	if response["user"] == nil {
+	if response.User.ID <= 0 {
 		t.Error("response should contain user data")
 	}
 }
@@ -409,18 +420,18 @@ func TestUpdateUserByID_Success(t *testing.T) {
 
 	CreateUser(rr, req)
 
-	var createResponse map[string]interface{}
+	var createResponse ApiResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
 	if err != nil {
 		t.Errorf("failed to unmarshal create response: %v", err)
 	}
 
-	userID, exists := createResponse["user_id"]
-	if !exists {
+	userID := createResponse.User.ID
+	if userID == 0 {
 		t.Fatal("user_id not found in create response")
 	}
 
-	userIDStr := fmt.Sprintf("%.0f", userID.(float64))
+	userIDStr := fmt.Sprintf("%d", createResponse.User.ID)
 	
 	updatedUser := model.User{
 		Username: "updateduser",
@@ -461,17 +472,17 @@ func TestDeleteUserByID(t *testing.T) {
 
 	CreateUser(rr, req)
 
-	var createResponse map[string]interface{}
+	var createResponse ApiResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &createResponse)
 	if err != nil {
 		t.Errorf("failed to unmarshal create response: %v", err)
 	}
-	userID, exists := createResponse["user_id"]
-	if !exists {
+	userID := createResponse.User.ID
+	if userID == 0 {
 		t.Fatal("user_id not found in create response")
 	}
 
-	userIDStr := fmt.Sprintf("%.0f", userID.(float64))
+	userIDStr := fmt.Sprintf("%d", userID)
 	req = httptest.NewRequest("DELETE", "/users/"+userIDStr, nil)
 	req = mux.SetURLVars(req, map[string]string{"userID": userIDStr})
 	rr = httptest.NewRecorder()
