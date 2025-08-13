@@ -15,6 +15,7 @@ import (
 // ============ Implementation of Types and Structs =============
 
 type LoginData struct {
+	ID       uint64 `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -80,6 +81,7 @@ func TestLogin_Success(t *testing.T) {
 	}
 
 	testUser := model.LoginUser{
+		ID:        	1,
 		Email: 		"teste@gmail.com",
 		Password: 	string(hashedPassword),
 	}
@@ -125,8 +127,8 @@ func TestLogin_Success(t *testing.T) {
 		t.Error("Expected token in response, got empty string")
 	}
 
-	if response.Token != "TokenPlaceholder" {
-		t.Errorf("Expected token to be 'TokenPlaceholder', got %q", response.Token)
+	if !strings.HasPrefix(response.Token, "Bearer ") {
+		t.Errorf("Expected token to be 'Bearer <token>', got %q", response.Token)
 	}
 }
 
