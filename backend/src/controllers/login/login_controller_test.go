@@ -129,3 +129,21 @@ func TestLogin_Success(t *testing.T) {
 		t.Errorf("Expected token to be 'TokenPlaceholder', got %q", response.Token)
 	}
 }
+
+func TestLogin_InvalidJSON(t *testing.T) {
+	mockRepo := NewMockLoginRepository()
+	setTestRepository(mockRepo)
+	defer restoreRepository()
+
+	invalidJSON := []byte(`"email": "test@gmail.com", "password":}`)
+
+	req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(invalidJSON))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	Login(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, rr.Code)
+	}
+}
