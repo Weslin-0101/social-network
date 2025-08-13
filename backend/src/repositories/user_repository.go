@@ -145,6 +145,33 @@ func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, 
 	return user, nil
 }
 
+func (r *PostgreUserRepository) GetUserByEmail(email string) (model.LoginUser, error) {
+	query := `
+		SELECT
+			email, password
+		FROM
+			users
+		WHERE
+			email = $1
+	`
+
+	var loginUser model.LoginUser
+	err := r.db.QueryRow(query, strings.TrimSpace(email)).Scan(
+		&loginUser.Email,
+		&loginUser.Password,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return model.LoginUser{}, exceptions.ErrUserNotFound
+		}
+
+		return model.LoginUser{}, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	return loginUser, nil
+}
+
 func (r *PostgreUserRepository) UpdateUserByID(userID uint64, user model.User) (model.User, error) {
 	query := `
 		UPDATE users

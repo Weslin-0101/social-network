@@ -36,6 +36,7 @@ const (
 	ErrCodeTooLong			= "TOO_LONG"
 	ErrCodeInvalidChars 	= "INVALID_CHARACTERS"
 	ErrCodeTooWeakPassword 	= "PASSWORD_TOO_WEAK"
+	ErrCodeInvalidCredentials = "INVALID_CREDENTIALS"
 )
 
 func (u *User) BeforeCreate(step string) error {

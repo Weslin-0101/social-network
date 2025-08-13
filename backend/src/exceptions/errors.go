@@ -9,4 +9,5 @@ var (
 	ErrDatabaseConnection = errors.New("failed to connect to the database")
 	ErrInternalServer = errors.New("internal server error occurred")
 	ErrBadRequest = errors.New("invalid request body format")
+	ErrInvalidCredentials = errors.New("invalid email or password")
 )
