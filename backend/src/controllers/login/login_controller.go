@@ -87,7 +87,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]interface{}{
 		"message": "Login successful",
-		"token":   "Bearer " + token,
+		"token":   token,
 	}
 
 	w.WriteHeader(http.StatusOK)

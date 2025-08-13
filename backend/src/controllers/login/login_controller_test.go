@@ -126,10 +126,6 @@ func TestLogin_Success(t *testing.T) {
 	if response.Token == "" {
 		t.Error("Expected token in response, got empty string")
 	}
-
-	if !strings.HasPrefix(response.Token, "Bearer ") {
-		t.Errorf("Expected token to be 'Bearer <token>', got %q", response.Token)
-	}
 }
 
 func TestLogin_InvalidJSON(t *testing.T) {
