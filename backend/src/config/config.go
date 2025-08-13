@@ -19,6 +19,7 @@ var (
 	DBURL 		= ""
 
 	APIPort 	= 0
+	SecretKey 	= []byte{}
 )
 
 func Load() {
@@ -66,4 +67,6 @@ func Load() {
 	if err != nil {
 		APIPort = 5000
 	}
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 }
