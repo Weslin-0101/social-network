@@ -1,6 +1,7 @@
 package login
 
 import (
+	"backend/src/authentication"
 	"backend/src/database"
 	"backend/src/exceptions"
 	"backend/src/interfaces"
@@ -77,9 +78,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{} {
+	token, err := authentication.GenerateToken(user.ID)
+	if err != nil {
+		log.Printf("Error generating token: %v", err)
+		exceptions.HandleError(w, r, http.StatusInternalServerError, exceptions.ErrInternalServer)
+		return
+	}
+
+	response := map[string]interface{}{
 		"message": "Login successful",
-		"token": "TokenPlaceholder",
+		"token":   "Bearer " + token,
 	}
 
 	w.WriteHeader(http.StatusOK)
