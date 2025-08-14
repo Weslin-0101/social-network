@@ -11,4 +11,5 @@ var (
 	ErrBadRequest = errors.New("invalid request body format")
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrUnauthorized = errors.New("unauthorized access")
+	ErrForbidden = errors.New("forbidden access")
 )

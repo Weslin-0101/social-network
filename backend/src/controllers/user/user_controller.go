@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"backend/src/authentication"
 	"backend/src/database"
 	"backend/src/exceptions"
 	"backend/src/interfaces"
 	"backend/src/model"
 	"backend/src/repositories"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -205,6 +207,19 @@ func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 		exceptions.HandleError(w, r, http.StatusBadRequest, exceptions.ErrInvalidUserID)
 		return
 	}
+
+	userIDFromToken, err := authentication.ExtractUserID(r)
+	if err != nil {
+		exceptions.HandleError(w, r, http.StatusUnauthorized, exceptions.ErrUnauthorized)
+		return
+	}
+
+	if userID != userIDFromToken {
+		exceptions.HandleError(w, r, http.StatusForbidden, exceptions.ErrForbidden)
+		return
+	}
+
+	fmt.Println(userIDFromToken)
 
 	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {

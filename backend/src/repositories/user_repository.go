@@ -148,7 +148,7 @@ func (r *PostgreUserRepository) GetUserByNickname(nickname string) (model.User, 
 func (r *PostgreUserRepository) GetUserByEmail(email string) (model.LoginUser, error) {
 	query := `
 		SELECT
-			email, password
+			id, email, password
 		FROM
 			users
 		WHERE
@@ -157,6 +157,7 @@ func (r *PostgreUserRepository) GetUserByEmail(email string) (model.LoginUser, e
 
 	var loginUser model.LoginUser
 	err := r.db.QueryRow(query, strings.TrimSpace(email)).Scan(
+		&loginUser.ID,
 		&loginUser.Email,
 		&loginUser.Password,
 	)

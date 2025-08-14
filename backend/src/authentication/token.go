@@ -37,6 +37,29 @@ func ValidateToken(r *http.Request) error {
 	return errors.InvalidArgumentError("invalid token")
 }
 
+func ExtractUserID(r *http.Request) (uint64, error) {
+	tokenString := extractToken(r)
+
+	token, err := jwt.Parse(tokenString, getVerificationKey)
+	if err != nil {
+		return 0, err
+	}
+
+	if permissions, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if userIDFloat, ok := permissions["user_id"].(float64); ok {
+			return uint64(userIDFloat), nil
+		}
+
+		if userIDInt, ok := permissions["user_id"].(int64); ok {
+			return uint64(userIDInt), nil
+		}
+
+		return 0, errors.InvalidArgumentError("invalid user_id type in token")
+	}
+
+	return 0, errors.InvalidArgumentError("invalid token claims")
+}
+
 func extractToken(r *http.Request) string {
 	token := r.Header.Get("Authorization")
 
