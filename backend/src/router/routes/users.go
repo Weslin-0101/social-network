@@ -21,24 +21,24 @@ var userRoutes = []Route {
 		URI: "/users/{userID}",
 		Method: "GET",
 		Function: controllers.GetUserByID,
-		AuthRequired: false,
+		AuthRequired: true,
 	},
 	{
 		URI: "/users/nickname/{nickname}",
 		Method: "GET",
 		Function: controllers.GetUserByNickname,
-		AuthRequired: false,
+		AuthRequired: true,
 	},
 	{
 		URI: "/users/{userID}",
 		Method: "PUT",
 		Function: controllers.UpdateUserByID,
-		AuthRequired: false,
+		AuthRequired: true,
 	},
 	{
 		URI: "/users/{userID}",
 		Method: "DELETE",
 		Function: controllers.DeleteUserByID,
-		AuthRequired: false,
+		AuthRequired: true,
 	},
 }

@@ -270,6 +270,17 @@ func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDFromToken, err := authentication.ExtractUserID(r)
+	if err != nil {
+		exceptions.HandleError(w, r, http.StatusUnauthorized, exceptions.ErrUnauthorized)
+		return
+	}
+
+	if userID != userIDFromToken {
+		exceptions.HandleError(w, r, http.StatusForbidden, exceptions.ErrForbidden)
+		return
+	}
+
 	repo, err := GetUserRepository()
 	if err != nil {
 		log.Printf("Error getting user repository: %v", err)
